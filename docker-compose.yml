@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: prefect
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: prefect
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  prefect:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PREFECT_HOME: /data
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:password@postgres/prefect
+    command: prefect server start --host 0.0.0.0
+    volumes:
+      - prefect-data:/data
+      - .:/app
+    depends_on:
+      - postgres
+  prefect-worker:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PREFECT_API_URL: http://prefect:4200/api
+    #  GOOGLE_APPLICATION_CREDENTIALS: /tmp/keys/application_default_credentials.json
+    command: prefect worker start --with-healthcheck -p cloud-run-worker-pool -t cloud-run --base-job-template base-job-template.json
+    # mounting your gcloud credentials
+    # volumes:
+    #   - ~/.config/gcloud/application_default_credentials.json:/tmp/keys/application_default_credentials.json:ro
+    depends_on:
+      - prefect
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:8080"
+      - "4200:4200"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./html:/usr/share/nginx/html:ro
+    restart: always
+volumes:
+  postgres-data: {}
+  prefect-data: {}

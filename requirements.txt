@@ -1,0 +1,2 @@
+prefect==3.0.1
+prefect-gcp>=0.6.0rc1
