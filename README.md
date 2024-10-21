@@ -38,3 +38,50 @@ https://github.com/flavienbwk/prefect-docker-compose
 
 ## How to setup gcp worker
 https://docs.prefect.io/integrations/prefect-gcp/gcp-worker-guide
+
+# Diagram  
+```mermaid
+graph TD
+    A[Client] -->|8080, 4200| B(nginx)
+    B -->|4200| C(prefect)
+    C -->|DB Connection| D(postgres)
+    E(prefect-worker) -->|API URL| C
+    
+    subgraph Docker Compose
+        B
+        C
+        D
+        E
+    end
+    
+    C -.->|depends on| D
+    E -.->|depends on| C
+    
+    G[Volumes]
+    D -.->|postgres-data| G
+    C -.->|prefect-data| G
+    
+    subgraph Nginx Configuration
+        H[Port 4200]
+        I[Port 8080]
+        J{Authorization Check}
+        K[Basic Auth]
+    end
+    
+    B --> H
+    B --> I
+    H --> J
+    J -->|Bearer Token| C
+    I --> K
+    K --> C
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#fbb,stroke:#333,stroke-width:2px
+    style E fill:#bfb,stroke:#333,stroke-width:2px
+    style G fill:#e6e6fa,stroke:#333,stroke-width:2px
+    style H fill:#fffacd,stroke:#333,stroke-width:2px
+    style I fill:#fffacd,stroke:#333,stroke-width:2px
+    style J fill:#ff6347,stroke:#333,stroke-width:2px
+    style K fill:#ff6347,stroke:#333,stroke-width:2px```
